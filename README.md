@@ -22,7 +22,7 @@ parte del grupo.
 |Juan Eduardo Calderon Jaramillo | 2611001-3743 | juan.eduardo.calderon@correounivalle.edu.co |
 | |              |                                             |
 | |              |                                             |
-| |              |                                             |
+|Carlos Humberto Gutierrez Mejia | 2059817-3743 | carlos.humberto.gutierrez@correounivalle.edu.co |                                           |
 
 ## Cómo se entrega
 
