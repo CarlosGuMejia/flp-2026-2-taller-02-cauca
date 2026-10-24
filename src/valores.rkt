@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Jesus David Lopez Diaz 2611029-3743
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El valor procedimiento. Requiere sintaxis.rkt.
@@ -22,3 +22,13 @@
 (require "sintaxis.rkt")
 
 (provide (all-defined-out))
+
+;; procval
+;; Contrato: tipo de dato (cerradura ids body env)
+;; Propósito: representa un procedimiento como código más el ambiente
+;; donde nació: parámetros, cuerpo sin evaluar y ambiente de definición.
+(define-datatype procval procval?
+  (cerradura
+   (ids (list-of symbol?))
+   (body expresion?)
+   (env (lambda (v) #t))))
