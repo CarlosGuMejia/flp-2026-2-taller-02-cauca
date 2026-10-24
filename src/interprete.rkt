@@ -2,26 +2,17 @@
 ;Autores: Jesus David Lopez Diaz 2611029-3743
 
 ;; Taller 2 — El intérprete de Cauca.
-;; Fachada: reúne los seis módulos de src/ y reexporta todo lo que
-;; definen, de modo que quien la requiera vea todos los nombres sin
-;; requerir los módulos uno por uno.
+;; El recorrido de la sintaxis abstracta y la aplicación de
+;; procedimientos. Requiere sintaxis.rkt, valores.rkt, ambiente.rkt y
+;; primitivas.rkt.
 ;;
-;;   src/sintaxis.rkt    especificación léxica y gramatical, scanner, parser
-;;   src/valores.rkt     el valor procedimiento
-;;   src/ambiente.rkt    el TAD ambiente y el ambiente inicial
-;;   src/primitivas.rkt  las primitivas y sus verificaciones
-;;   src/interprete.rkt  la evaluación y la aplicación de procedimientos
-;;   src/interfaz.rkt    el punto de entrada y el REPL
-;;
-;; Los require van en un solo sentido. Racket no carga dos módulos que se
-;; requieran entre sí.
+;; apply-procedure vive aquí y no en valores.rkt porque llama a
+;; evaluar-expresion.
 
-(require "src/sintaxis.rkt")
-(require "src/valores.rkt")
-(require "src/ambiente.rkt")
-(require "src/primitivas.rkt")
-(require "src/interprete.rkt")
-(require "src/interfaz.rkt")
+(require "sintaxis.rkt")
+(require "valores.rkt")
+(require "ambiente.rkt")
+(require "primitivas.rkt")
 
 ;; apply-procedure : procval x lista de valores -> valor
 ;; Verifica que la cantidad de argumentos coincida con la de parámetros
