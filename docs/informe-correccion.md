@@ -279,44 +279,148 @@ evalúa el control una sola vez y el recorrido termina.
 
 ---
 
-## 3. Propiedades adicionales (si aplica)
+### 3.1 Corrección de `apply-env` sobre `ambiente-recursivo`
 
-Incluya en esta sección cualquier propiedad adicional que el
-enunciado exija demostrar, por ejemplo:
+Esta subsección demuestra el punto 2 de la sección 6.2 del enunciado: que
+`apply-env`, al encontrar un nombre ligado por `letrec`, construye una clausura que
+satisface el invariante de la ligadura recursiva. También enuncia la propiedad de
+shadowing de `ambiente-extendido`.
 
-- **Shadowing de ambientes** (`apply-env`): la ligadura más reciente
-  tiene prioridad sobre las anteriores.
-- **Secuencialidad de `let*`**: cada ligadura se evalúa en un
-  ambiente que incluye las anteriores.
-- **Equivalencia semántica** entre dos implementaciones (por ejemplo,
-  representación basada en listas vs. basada en procedimientos de un
-  mismo TAD).
-- **Invariante del almacén**: si $\sigma' = \text{setref!}(\sigma, \ell, v)$,
-  entonces $\sigma'(\ell) = v$ y $\sigma'(\ell') = \sigma(\ell')$ para todo
-  $\ell' \neq \ell$. La operación que reserva una celda es la única que
-  cambia la longitud del almacén.
-- **Invariante de la transacción**: sea $\sigma_0$ el almacén al entrar a
-  un bloque `atomic` y $\sigma$ el almacén en el momento de abortar. Si
-  el registro de la transacción guarda, para cada celda $\ell$ escrita
-  dentro del bloque, el valor $\sigma_0(\ell)$ que tenía al entrar, y la
-  longitud $|\sigma_0|$, entonces revertir devuelve exactamente
-  $\sigma_0$: las celdas registradas recuperan su valor, las que no se
-  escribieron nunca cambiaron, y las creadas adentro (posiciones
-  $\geq |\sigma_0|$) desaparecen. Demostrar por inducción sobre el
-  número de escrituras del bloque, y tratar aparte el caso de una
-  transacción hija que confirmó antes de que la padre abortara.
-- **Paso por referencia**: el parámetro queda ligado a la misma
-  referencia del argumento, de modo que una escritura dentro del
-  procedimiento se observa fuera. Contrastar con el paso por valor
-  sobre el mismo programa.
-- **Solidez de un chequeador de tipos**: si $\Gamma \vdash e : t$ y el
-  ambiente de valores $\rho$ concuerda con el ambiente de tipos
-  $\Gamma$, entonces $\text{value-of}(e, \rho)$ es un valor de tipo
-  $t$. Precisar primero qué significa la concordancia entre $\rho$ y
-  $\Gamma$.
+#### 3.1.1 Definiciones
 
-Cada propiedad debe enunciarse formalmente y demostrarse con el
-mismo rigor que las funciones anteriores.
+Sea $\rho_{rec} = \texttt{ambiente-recursivo}(F, P, B, \rho)$ con
+
+$$
+F = (f_1,\dots,f_k),\quad P = (P_1,\dots,P_k),\quad B = (b_1,\dots,b_k),
+$$
+
+donde $f_i$ es el nombre, $P_i$ la lista de parámetros y $b_i$ el cuerpo (sin evaluar)
+del $i$-ésimo procedimiento. Se supone que los nombres $f_i$ son distintos entre sí y
+que $|F|=|P|=|B|=k$ (lo garantiza el parser, que produce las tres listas con un solo `arbno`).
+
+**Invariante de la ligadura recursiva** $\text{InvRec}(\rho_{rec})$:
+
+$$
+\forall i \in \{1,\dots,k\}:\quad
+\text{apply-env}(\rho_{rec}, f_i) = \texttt{cerradura}(P_i,\ b_i,\ \rho_{rec})
+$$
+
+Es decir, la clausura de cada $f_i$ guarda como ambiente al **propio** $\rho_{rec}$, que
+contiene los nombres de todos los procedimientos del mismo `letrec`, incluido el suyo.
+
+**Código analizado** (`src/ambiente.rkt`):
+
+```racket
+(define buscar-recursivo
+  (lambda (id nombres idss bodies amb-rec resto)
+    (cond
+      [(null? nombres) (apply-env resto id)]
+      [(eqv? id (car nombres))
+       (cerradura (car idss) (car bodies) amb-rec)]
+      [else (buscar-recursivo id (cdr nombres) (cdr idss) (cdr bodies)
+                              amb-rec resto)])))
+
+;; dentro de apply-env:
+(ambiente-recursivo (proc-names idss bodies resto)
+  (buscar-recursivo id proc-names idss bodies env resto))
+```
+
+Aquí `env` es el ambiente recursivo completo, que `apply-env` recibió como argumento.
+
+#### 3.1.2 Lema: `buscar-recursivo` recorre la lista de nombres
+
+**Lema A.** Sean $N=(n_1,\dots,n_m)$, $Q=(Q_1,\dots,Q_m)$ y $C=(c_1,\dots,c_m)$ listas de la misma
+longitud $m$, y sean $\alpha$ y $\rho_0$ ambientes. Entonces:
+
+$$
+\text{buscar-rec}(id, N, Q, C, \alpha, \rho_0) =
+\begin{cases}
+\texttt{cerradura}(Q_j,\ c_j,\ \alpha) & \text{si } j=\min\{\,l \mid id = n_l\,\}\text{ existe} \\
+\text{apply-env}(\rho_0,\ id) & \text{si } id \notin N
+\end{cases}
+$$
+
+**Demostración** por inducción sobre $m$.
+
+- **Caso base** ($m=0$). `(null? nombres)` es verdadero y el resultado es
+  $\text{apply-env}(\rho_0, id)$. Como $N$ es vacía, $id\notin N$. ✓
+- **Caso inductivo** ($m=n+1$, $N=(n_1\ .\ N')$, $Q=(Q_1\ .\ Q')$, $C=(c_1\ .\ C')$).
+  **HI:** el lema vale para $N',Q',C'$ (de longitud $n$).
+  - Si $id=n_1$, la segunda cláusula devuelve $\texttt{cerradura}(Q_1, c_1, \alpha)$ con $j=1$. ✓
+  - Si $id\neq n_1$, se llega a `else` y el resultado es
+    $\text{buscar-rec}(id,N',Q',C',\alpha,\rho_0)$, que por la HI es
+    $\texttt{cerradura}(Q'_{j'}, c'_{j'},\alpha)$ con $j'$ el menor índice de $N'$ (equivalente
+    a $j=j'+1$ en $N$), o bien $\text{apply-env}(\rho_0,id)$ si $id\notin N'$, que equivale
+    a $id\notin N$ porque $n_1\neq id$. ✓
+
+**Terminación.** La medida $m=|N|\in\mathbb{N}$ decrece en 1 en cada llamada recursiva
+(`cdr` de las tres listas) y la recursión se detiene en $m=0$. $\blacksquare$
+
+#### 3.1.3 Teorema: `apply-env` sobre `ambiente-recursivo` cumple el invariante
+
+**Teorema.** Para todo $\rho_{rec}=\texttt{ambiente-recursivo}(F,P,B,\rho)$ con nombres distintos,
+$\text{InvRec}(\rho_{rec})$ se cumple. Además, para todo $id\notin F$:
+$\text{apply-env}(\rho_{rec},id)=\text{apply-env}(\rho,id)$.
+
+**Demostración.** En la variante `ambiente-recursivo`, `apply-env` llama a
+$\text{buscar-rec}(id, F, P, B, \rho_{rec}, \rho)$, entregando como $\alpha$ al ambiente
+recursivo completo (`env`). Se aplica el Lema A con $N=F$, $Q=P$, $C=B$, $\alpha=\rho_{rec}$:
+
+- Si $id=f_i$, como los nombres son distintos el menor índice es $i$, y el resultado es
+  $\texttt{cerradura}(P_i, b_i, \rho_{rec})$. Esto es exactamente $\text{InvRec}(\rho_{rec})$. ✓
+- Si $id\notin F$, el resultado es $\text{apply-env}(\rho, id)$: la búsqueda continúa en el
+  ambiente de afuera y los ligamientos anteriores no se alteran. ✓ $\blacksquare$
+
+#### 3.1.4 Consecuencia: el cuerpo de cada procedimiento ve a todos los del `letrec`
+
+Al aplicar la clausura $\texttt{cerradura}(P_i,b_i,\rho_{rec})$ con argumentos $\vec{v}$,
+`apply-procedure` evalúa $b_i$ en
+
+$$
+\rho_i' = \texttt{ambiente-extendido}(P_i,\ \vec{v},\ \rho_{rec}).
+$$
+
+**Proposición.** Para todo $f_j\in F$ con $f_j\notin P_i$:
+
+$$
+\text{apply-env}(\rho_i', f_j) = \texttt{cerradura}(P_j,\ b_j,\ \rho_{rec}).
+$$
+
+*Demostración.* `buscar-extendido` recorre los parámetros $P_i$ sin encontrar $f_j$
+(por inducción sobre $|P_i|$: cada paso descarta un elemento distinto de $f_j$) y delega en
+$\text{apply-env}(\rho_{rec},f_j)$, que por el Teorema vale $\texttt{cerradura}(P_j,b_j,\rho_{rec})$. $\blacksquare$
+
+En particular para $j=i$: el cuerpo $b_i$ puede invocar al procedimiento $f_i$ (recursión
+directa) y a cualquier $f_j$ del mismo `letrec` (recursión mutua). Si un parámetro se
+llama igual que algún $f_j$, lo tapa por shadowing, que es el comportamiento léxico esperado.
+
+El cuerpo del `letrec` (la expresión después de `in`) se evalúa directamente en
+$\rho_{rec}$, y ahí $\text{InvRec}(\rho_{rec})$ vale por el Teorema.
+
+**Observación.** La clausura se construye cada vez que se busca el nombre, no se guarda.
+Como `cerradura` es un dato inmutable que depende solo de $(P_i,b_i,\rho_{rec})$, dos
+búsquedas del mismo nombre devuelven clausuras estructuralmente iguales y el
+comportamiento es el mismo que si se hubiera guardado una sola.
+
+#### 3.1.5 Shadowing en `ambiente-extendido`
+
+**Propiedad.** Si $\rho = \texttt{ambiente-extendido}((x_1,\dots,x_m),(v_1,\dots,v_m),\rho_0)$:
+
+$$
+\text{apply-env}(\rho, id) =
+\begin{cases}
+v_j & \text{si } j=\min\{\,l \mid id=x_l\,\}\text{ existe} \\
+\text{apply-env}(\rho_0, id) & \text{si } id\notin\{x_1,\dots,x_m\}
+\end{cases}
+$$
+
+*Demostración.* Inducción sobre $m$, igual que el Lema A: en el caso base `buscar-extendido`
+delega en $\rho_0$; en el inductivo devuelve `(car vals)` si $id=x_1$ y si no recurre sobre
+`(cdr ids)` y `(cdr vals)`. La ligadura más reciente (la del marco más interno) se revisa
+antes que las de $\rho_0$, y por eso las tapa. La medida $m$ decrece en 1. $\blacksquare$
+
+Ejemplo: en `let n = 99 in n end` el marco de `n = 99` se revisa antes que el del
+ambiente inicial (`n = 10`), así que el resultado es $99$.
 
 ---
 
