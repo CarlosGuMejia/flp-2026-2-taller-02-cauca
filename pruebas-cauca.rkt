@@ -1,5 +1,6 @@
 #lang eopl
-;Autores: Juan Eduardo Calderon Jaramillo 2611001
+;Autores: Juan Eduardo Calderon Jaramillo 2611001, Carlos Humberto Gutierrez Mejia 2059817
+
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Batería de pruebas con rackunit. Llega escrita en el fork y no se
@@ -359,6 +360,101 @@ end"))))
 
 ;; Las suites que agregue el grupo se declaran arriba y se suman aquí.
 
+;; ==========================================================
+;; Pruebas del grupo — primitivas y ambientes (Carlos)
+;; ==========================================================
+
+(define carlos-primitivas-base
+  (test-suite
+   "Carlos: primitivas base"
+   (test-case "aritmeticas n-arias"
+              (check-equal? (corre "+(1, 2, 3, 4)") 10)
+              (check-equal? (corre "-(20, 5, 5)") 10)
+              (check-equal? (corre "*(1.5, 2)") 3.0)
+              (check-equal? (corre "/(7, 2)") 7/2))
+   (test-case "unarias"
+              (check-equal? (corre "add1(-1)") 0)
+              (check-equal? (corre "sub1(0)") -1))
+   (test-case "relacionales"
+              (check-equal? (corre ">(3, 3)") #f)
+              (check-equal? (corre "<=(3, 3)") #t)
+              (check-equal? (corre "==(2, 3)") #f))
+   (test-case "logicas"
+              (check-equal? (corre "not(false)") #t)
+              (check-equal? (corre "or(false, false)") #f)
+              (check-equal? (corre "and(true, true)") #t))
+   (test-case "errores de las primitivas base"
+              (check-exn exn:fail? (lambda () (corre "+(1, true)")))
+              (check-exn exn:fail? (lambda () (corre "/(5, 0)")))
+              (check-exn exn:fail? (lambda () (corre "add1(1, 2)")))
+              (check-exn exn:fail? (lambda () (corre "not(1)")))
+              (check-exn exn:fail? (lambda () (corre ">(1)"))))))
+
+(define carlos-primitivas-nuevas
+  (test-suite
+   "Carlos: primitivas nuevas"
+   (test-case "abs"
+              (check-equal? (corre "abs(-10)") 10)
+              (check-equal? (corre "abs(0)") 0)
+              (check-equal? (corre "abs(-2.5)") 2.5)
+              (check-exn exn:fail? (lambda () (corre "abs(1, 2)"))))
+   (test-case "mcd"
+              (check-equal? (corre "mcd(48, 18)") 6)
+              (check-equal? (corre "mcd(-12, 18)") 6)
+              (check-equal? (corre "mcd(0, 5)") 5)
+              (check-exn exn:fail? (lambda () (corre "mcd(6)")))
+              (check-exn exn:fail? (lambda () (corre "mcd(4, true)"))))
+   (test-case "mcm"
+              (check-equal? (corre "mcm(6, 8)") 24)
+              (check-equal? (corre "mcm(0, 5)") 0)
+              (check-equal? (corre "mcm(4, 6, 10)") 60)
+              (check-exn exn:fail? (lambda () (corre "mcm(1.5, 2)"))))
+   (test-case "promedio"
+              (check-equal? (corre "promedio(2, 4)") 3)
+              (check-equal? (corre "promedio(1, 2)") 3/2)
+              (check-equal? (corre "promedio(1.5, 2.5)") 2.0)
+              (check-equal? (corre "promedio(5)") 5)
+              (check-exn exn:fail? (lambda () (corre "promedio()")))
+              (check-exn exn:fail? (lambda () (corre "promedio(true)"))))
+   (test-case "xor"
+              (check-equal? (corre "xor(false, true)") #t)
+              (check-equal? (corre "xor(and(true, true), false)") #t)
+              (check-equal? (corre "xor(false, false)") #f)
+              (check-exn exn:fail? (lambda () (corre "xor(true)"))))
+   (test-case "implica"
+              (check-equal? (corre "implica(false, true)") #t)
+              (check-equal? (corre "implica(true, false)") #f)
+              (check-equal? (corre "implica(or(false, true), false)") #f)
+              (check-exn exn:fail? (lambda () (corre "implica(1, true)"))))
+   (test-case "entre"
+              (check-equal? (corre "entre(5, 5, 5)") #t)
+              (check-equal? (corre "entre(0, 1, 10)") #f)
+              (check-equal? (corre "entre(2.5, 2, 3)") #t)
+              (check-exn exn:fail? (lambda () (corre "entre(true, 1, 2)")))
+              (check-exn exn:fail? (lambda () (corre "entre(1, 2, 3, 4)"))))))
+
+(define carlos-ambientes
+  (test-suite
+   "Carlos: ambientes y shadowing"
+   (test-case "apply-env directo"
+              (check-equal? (apply-env (ambiente-inicial) 'n) 10)
+              (check-equal? (apply-env (ambiente-extendido '(a b) '(1 2)
+                                                           (ambiente-vacio))
+                                       'b)
+                            2)
+              (check-exn exn:fail? (lambda () (apply-env (ambiente-vacio) 'x))))
+   (test-case "shadowing"
+              (check-equal? (corre "let n = 99 in n end") 99)
+              (check-equal? (corre "let n = 99 in m end") 3)
+              (check-equal? (corre "let x = 1 in let x = 2 in let y = x in y end end end") 2))
+   (test-case "variable no ligada"
+              (check-exn exn:fail? (lambda () (corre "w")))
+              (check-exn exn:fail? (lambda () (corre "let a = 1 in b end"))))
+   (test-case "ambiente-recursivo"
+              (check-equal? (corre "letrec f (a) = a in apply f (7) end") 7)
+              (check-equal? (corre "letrec f (a) = +(a, n) in apply f (1) end") 11))))
+
+
 (define fallidas
   (+ (run-tests base)
      (run-tests primitivas-nuevas)
@@ -366,7 +462,10 @@ end"))))
      (run-tests recursion-y-case)
      (run-tests scanner-pruebas)
      (run-tests parser-pruebas)
-     (run-tests fachada-y-repl)))
+     (run-tests fachada-y-repl)
+     (run-tests carlos-primitivas-base)
+     (run-tests carlos-primitivas-nuevas)
+     (run-tests carlos-ambientes)))
 
 (eopl:printf "~%==========================================~%")
 (eopl:printf "  pruebas fallidas en total: ~s~%" fallidas)
