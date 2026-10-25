@@ -14,7 +14,7 @@ de Programación — Universidad del Valle, Sede Tuluá.
 
 | Nombre | Código | Correo institucional |
 |--------|--------|----------------------|
-| {{Nombre 1}} | {{Código 1}} | {{correo1@correounivalle.edu.co}} |
+| Jesus David Lopez Diaz | 202611029  | jesus.david.lopez@correounivalle.edu.co |
 | Carlos Humberto Gutierrez Mejia | 2059817 | carlos.humberto.gutierrez@correounivalle.edu.co |
 
 ---
@@ -68,81 +68,203 @@ La corrección se argumenta demostrando:
 > Complete **una subsección por cada función pedida en el enunciado**.
 > Copie la plantilla de subsección tantas veces como sea necesario.
 
-### 2.1 Corrección de `{{nombre-funcion-1}}`
 
-**Especificación.**
+### 2.1 Corrección de `apply-procedure` (enunciado, 6.1)
 
-- **Tipo:** `{{nombre-funcion-1}} : {{Tipo de entrada}} -> {{Tipo de salida}}`
-- **Pre-condición:** $\text{Pre}(a) \equiv \{{\ldots}\}$.
-- **Post-condición:** $\text{Post}(a, r) \equiv r = f(a)$, donde
-  $f$ es {{descripción matemática de la función}}.
+Notación. $\rho$ es un ambiente; $\rho[\bar{x} = \bar{v}]$ es $\rho$ extendido con las ligaduras $x_1 = v_1, \dots, x_n = v_n$ (las nuevas tapan a las anteriores con el mismo nombre); $\text{value-of}(e, \rho)$ es el valor de la expresión $e$ en $\rho$. Una clausura se escribe $\langle \bar{x};\ b;\ \rho_d \rangle$: parámetros, cuerpo sin evaluar y ambiente de definición.
 
-**Código.**
+Especificación.
 
-```racket
-; {{nombre-funcion-1}} : {{contrato}}
-; Propósito: {{...}}
-(define ({{nombre-funcion-1}} ...)
-  ...)
-```
+Tipo: apply-procedure : procval x lista de valores -> valor
+Pre-condición: $\text{Pre}(f, \bar{v}) \equiv f = \langle x_1,\dots,x_n;\ b;\ \rho_d \rangle \;\land\; |\bar{v}| = n$.
+Post-condición: $\text{Post}(f, \bar{v}, r) \equiv r = \text{value-of}\bigl(b,\ \rho_d[\bar{x} = \bar{v}]\bigr)$.
+Fuera de la pre-condición: si $f$ no es una clausura, o si $|\bar{v}| \neq n$, la función levanta eopl:error y no evalúa el cuerpo.
 
-**Estrategia de demostración:** {{recursión estructural sobre ... /
-iteración con invariante ...}}.
+proc-exp y app-exp completan la semántica:
 
-**Demostración.**
+$$\text{value-of}(\texttt{proc}\ (\bar{x})\ b\ \texttt{end},\ \rho) = \langle \bar{x};\ b;\ \rho \rangle$$
+$$
+\text{value-of}(\texttt{apply}\ e_0\ (e_1,\dots,e_k),\ \rho) =
+\texttt{apply-procedure}\bigl(\text{value-of}(e_0,\rho),\ [\text{value-of}(e_1,\rho),\dots,\text{value-of}(e_k,\rho)]\bigr)
+$$
 
-- **Caso base** ($a = {{\ldots}}$):
+Código.
 
-  $$
-  P_f({{\ldots}}) \to {{\ldots}} \quad \land \quad f({{\ldots}}) = {{\ldots}}
-  $$
+racket
+(proc-exp (ids body)
+  (cerradura ids body env))
 
-  Por lo tanto $P_f({{\ldots}}) = f({{\ldots}})$.
+(app-exp (rator rands)
+  (let ((proc (evaluar-expresion rator env)))
+    (if (procval? proc)
+        (let ((args (evaluar-rands rands env)))
+          (apply-procedure proc args))
+        (eopl:error 'app-exp "El operador no es un procedimiento: ~s" proc))))
 
-- **Caso inductivo** ($a = {{\ldots}}$): asumimos la hipótesis de
-  inducción $P_f(a') = f(a')$ para {{las subestructuras de $a$}}.
+; apply-procedure : procval x lista de valores -> valor
+; Propósito: evalúa el cuerpo en el ambiente de la clausura extendido con
+; los parámetros, no en el ambiente de la llamada.
+(define apply-procedure
+  (lambda (proc args)
+    (if (not (procval? proc))
+        (eopl:error 'apply-procedure "No es un procedimiento: ~s" proc)
+        (cases procval proc
+          (cerradura (ids body env)
+            (if (= (length ids) (length args))
+                (evaluar-expresion body (ambiente-extendido ids args env))
+                (eopl:error 'apply-procedure
+                            "Se esperaban ~s argumentos y se recibieron ~s"
+                            (length ids) (length args))))))))
 
-  $$
-  P_f(a) \to {{\ldots (aplicar una evaluación) \ldots}}
-  $$
+Estrategia de demostración: la función no es recursiva, así que no hay inducción: se razona por casos sobre el código y se contrastan las cadenas de ambientes del ejemplo del enunciado.
 
-  Usando la hipótesis de inducción:
+Demostración.
 
-  $$
-  \quad = {{\ldots}} = f(a).
-  $$
+(a) El cuerpo se evalúa en el ambiente de la clausura, no en el de la llamada.
 
-- **Terminación.** {{Identifique la medida que decrece estrictamente
-  en cada llamada recursiva — por ejemplo, la longitud de la lista o
-  el tamaño del AST — y argumente que está acotada inferiormente.}}
+Por construcción. apply-procedure tiene la forma (lambda (proc args) ...): no recibe el ambiente de la llamada $\rho_c$, así que no puede usarlo. El único ambiente a su alcance es el campo env de la clausura, que proc-exp fijó con el ambiente vigente al definirla. El cuerpo se evalúa en (ambiente-extendido ids args env), es decir, en $\rho_d[\bar{x} = \bar{v}]$. El ambiente de la llamada solo se usa antes, para evaluar el operador y los operandos.
 
-**Conclusión:** $\forall a \in A \,:\, P_f(a) = f(a)$, por lo tanto
-`{{nombre-funcion-1}}` es correcta respecto a su especificación.
+Con el ejemplo de contraste. Se evalúa el programa del enunciado desde el ambiente inicial $\rho_0 = [\,n = 10, m = 3, p = 7, q = 2, r = 5\,]$:
+
+let factor = 10
+in
+  let escalar = proc (v) *(v, factor) end
+  in
+    let factor = 1000
+    in
+      apply escalar (5)
+    end
+  end
+end
+Ambiente	Contenido	Dónde se crea
+$\rho_1$	$[\,\texttt{factor} = 10\,]\rho_0$	primer let
+$c$	$\langle (v);\ \texttt{*(v, factor)};\ \rho_1 \rangle$	proc-exp, evaluado en $\rho_1$
+$\rho_2$	$[\,\texttt{escalar} = c\,]\rho_1$	segundo let
+$\rho_3$	$[\,\texttt{factor} = 1000\,]\rho_2$	tercer let: ambiente de la llamada
+
+Al evaluar apply escalar (5) en $\rho_3$, el operador escalar no está en $\rho_3$ y se encuentra en $\rho_2$, donde vale $c$. El argumento vale $5$. Hay dos decisiones posibles:
+
+Ambiente de la definición (correcto, resultado 50). El cuerpo se evalúa en $\rho_4 = [\,v = 5\,]\rho_1$. Para factor, la búsqueda sale de $\rho_4$ y encuentra $10$ en $\rho_1$:
+
+$$\text{value-of}(\texttt{*(v, factor)},\ \rho_4) = 5 \cdot 10 = 50$$
+ρ4 = [v = 5]
+ρ1 = [factor = 10]
+ρ0 = [n = 10, m = 3, p = 7,q = 2, r = 5]
+ambiente-vacio
+
+Ambiente de la llamada (incorrecto, resultado 5000). El cuerpo se evaluaría en $\rho_5 = [\,v = 5\,]\rho_3$, donde factor se encuentra primero en $\rho_3$ con $1000$:
+
+$$\text{value-of}(\texttt{*(v, factor)},\ \rho_5) = 5 \cdot 1000 = 5000$$
+ρ5 = [v = 5]
+ρ3 = [factor = 1000]
+ρ2 = [escalar = c]
+ρ1 = [factor = 10]
+ρ0 = [n = 10, m = 3, p = 7,q = 2, r = 5]
+ambiente-vacio
+
+Las flechas van del ambiente que extiende hacia el ambiente extendido. La cadena de la clausura (primer diagrama) no pasa por $\rho_3$, y por eso el intérprete devuelve $50$: la clausura recuerda el ambiente donde nació el procedimiento.
+
+(b) Error exactamente cuando el operador no es un procedimiento o la aridad no coincide.
+
+Sea $e = \texttt{apply}\ e_0\ (e_1,\dots,e_k)$ y supóngase que evaluar $e_0$ y cada $e_i$ no levanta error. La aplicación levanta eopl:error si y solo si
+
+$$\text{value-of}(e_0,\rho) \notin \text{Procval} \quad \lor \quad k \neq n .$$
+app-exp evalúa el operador y pregunta (procval? proc). El datatype procval tiene una sola variante, cerradura, así que procval? es verdadero exactamente para las clausuras; los números y los booleanos dan falso. Si es falso, app-exp levanta eopl:error y no evalúa los operandos.
+Si es verdadero, se evalúan los operandos y se llama a apply-procedure. Esta función repite la verificación procval?, abre la clausura con cases y compara (length ids) con (length args). Si son distintos levanta eopl:error.
+Si el operador es una clausura y $k = n$, ninguna de las dos ramas con eopl:error se ejecuta: la aplicación evalúa el cuerpo en $\rho_d[\bar{x} = \bar{v}]$. Cualquier error posterior viene de evaluar el cuerpo, no de la aplicación.
+
+Los dos casos se comprueban en las pruebas con apply 5 (1) y con let f = proc (x) x end in apply f (1, 2) end.
+
+Terminación. apply-procedure no es recursiva: hace un número fijo de pasos (dos verificaciones, length sobre listas finitas y una extensión de ambiente) y luego evalúa el cuerpo, que es una subexpresión del AST. Termina siempre que la evaluación del cuerpo termine.
+
+Conclusión: apply-procedure es correcta respecto a su especificación: evalúa el cuerpo en $\rho_d[\bar{x} = \bar{v}]$ y levanta error exactamente en los dos casos previstos. $\blacksquare$
 
 ---
 
-### 2.2 Corrección de `{{nombre-funcion-2}}`
+### 2.2 Corrección de `letrec-exp` (enunciado, 6.2)
 
-**Especificación.**
+Especificación.
 
-- **Tipo:** `{{...}}`
-- **Pre-condición:** $\{{\ldots}\}$.
-- **Post-condición:** $\{{\ldots}\}$.
+Tipo: evaluar-expresion : expresion x ambiente -> valor, restringida a letrec-exp.
+Pre-condición: $\text{Pre} \equiv$ los nombres $p_1,\dots,p_n$ son símbolos y $|\bar{x}_i|$ es la aridad de $p_i$.
+Post-condición: sea $\rho_r = \texttt{ambiente-recursivo}(p_1..p_n;\ \bar{x}_1..\bar{x}_n;\ b_1..b_n;\ \rho)$.
+$$
+\text{value-of}(\texttt{letrec}\ p_1(\bar{x}_1) = b_1 \dots p_n(\bar{x}_n) = b_n\ \texttt{in}\ e\ \texttt{end},\ \rho)
+= \text{value-of}(e,\ \rho_r)
+$$
 
-**Código.**
+Código.
 
-```racket
-(define ({{nombre-funcion-2}} ...)
-  ...)
-```
+racket
+(letrec-exp (proc-names idss bodies body)
+  (evaluar-expresion
+   body
+   (ambiente-recursivo proc-names idss bodies env)))
 
-**Demostración.** {{Siga el mismo esquema: casos base, caso
-inductivo con hipótesis de inducción y terminación. Para casos de
-error explícitos —por ejemplo `eopl:error` cuando una condición no
-es booleana— demuestre que el programa levanta el error en ese caso y
-sólo en ese caso.}}
+Estrategia de demostración: enunciar un invariante sobre el ambiente $\rho_r$, demostrar que apply-env lo establece, mostrar por contraste que let no lo cumple, y argumentar la terminación del ejemplo con una medida decreciente.
 
----
+Demostración.
+
+(a) Invariante. Para cada $i \in \{1,\dots,n\}$, la clausura que se obtiene al buscar $p_i$ en $\rho_r$ es
+
+$$\texttt{apply-env}(\rho_r, p_i) = \langle \bar{x}_i;\ b_i;\ \rho_r \rangle \tag{INV}$$
+
+Es decir, su ambiente de definición es el propio $\rho_r$.
+
+Consecuencia. Al aplicar esa clausura a $\bar{v}$, el cuerpo $b_i$ se evalúa en $\rho_r[\bar{x}_i = \bar{v}]$. Ese ambiente contiene los $n$ nombres $p_1,\dots,p_n$ (salvo los que un parámetro de $\bar{x}_i$ tape con el mismo nombre), y cada uno vuelve a producir una clausura con ambiente $\rho_r$. Por eso el procedimiento puede llamarse a sí mismo y a los demás del mismo letrec.
+
+(b) apply-env sobre un ambiente-recursivo satisface el invariante.
+
+
+apply-env recibe el ambiente $\rho_r$ y el nombre buscado $x$. Si $x = p_i$, la rama de ambiente-recursivo devuelve (cerradura ids_i body_i env) con env igual al ambiente que recibió como argumento, es decir, $\rho_r$. Entonces $\texttt{apply-env}(\rho_r, p_i) = \langle \bar{x}_i;\ b_i;\ \rho_r \rangle$, que es (INV). Si $x$ no es ninguno de los $p_i$, la búsqueda continúa en $\rho$.
+
+La clausura se construye al buscar el nombre y no antes. Por eso no hace falta un ambiente circular ni mutación: $\rho_r$ solo guarda nombres, parámetros y cuerpos sin evaluar, y cada búsqueda arma una clausura nueva que apunta de vuelta a $\rho_r$.
+
+(c) Por qué let no satisface el invariante, y qué error produce. Con let, los operandos se evalúan en el ambiente actual $\rho$, antes de agregar la ligadura:
+
+let potencia = proc (base, exp)
+                 if ==(exp, 0) then 1
+                 else *(base, apply potencia (base, sub1(exp))) end
+               end
+in
+  apply potencia (2, 10)
+end
+
+El proc-exp se evalúa en $\rho$, así que la clausura queda $c = \langle (base, exp);\ b;\ \rho \rangle$ y solo después se construye $\rho_l = [\,\texttt{potencia} = c\,]\rho$. Entonces $\texttt{env}(c) = \rho \neq \rho_l$ y (INV) no se cumple: el ambiente de definición no contiene potencia.
+
+letrec: la clausura captura ρr, que sí la tiene
+ρr =ambiente-recursivo(potencia)
+ρ
+c = ⟨(base, exp); cuerpo; ρr⟩
+let: la clausura captura ρ, que no tiene potencia
+ρl = [potencia = c]
+ρ
+c = ⟨(base, exp); cuerpo; ρ⟩
+
+Al evaluar apply potencia (2, 10), el cuerpo corre en $[\,base = 2, exp = 10\,]\rho$. Como $exp \neq 0$, entra por la rama else y evalúa apply potencia (...). La búsqueda de potencia recorre esa cadena hasta ambiente-vacio sin encontrarla, y apply-env levanta eopl:error de variable no ligada, en la primera llamada recursiva. Si $\rho$ ya tuviera otra ligadura llamada potencia, la llamada iría a esa en silencio, que es otro error. Una prueba verifica que la versión con let falla.
+
+(d) Terminación del ejemplo de potencia.
+
+letrec
+  potencia (base, exp) = if ==(exp, 0) then 1
+                         else *(base, apply potencia (base, sub1(exp))) end
+in
+  apply potencia (2, 10)
+end
+
+La medida es $\mu(\texttt{potencia}(b, k)) = k \in \mathbb{N}$.
+
+La rama base ($k = 0$) devuelve $1$ sin llamadas recursivas.
+En la rama recursiva ($k > 0$), la única llamada es potencia(b, sub1(k)), con medida $k - 1 < k$.
+$\mathbb{N}$ no tiene cadenas infinitas decrecientes, así que toda secuencia de llamadas se detiene en $k = 0$.
+
+Por inducción sobre $k$ también se obtiene el valor correcto:
+
+$$P(b, 0) = 1, \qquad P(b, k) = b \cdot P(b, k-1) \;\Longrightarrow\; P(b, k) = b^k$$
+
+Para $b = 2$ y $k = 10$, el programa hace $10$ llamadas recursivas más la de base y devuelve $2^{10} = 1024$. Con un exponente negativo o no entero, la medida no llega a $0$ y la ejecución no termina; ese caso queda fuera del dominio $k \in \mathbb{N}$ del ejemplo.
+
+Conclusión: letrec-exp es correcta respecto a su especificación: el ambiente $\rho_r$ cumple (INV), let no lo cumple y falla con variable no ligada, y el ejemplo de potencia termina con $1024$. $\blacksquare$
 
 ### 2.3 Corrección de `case-exp`
 
