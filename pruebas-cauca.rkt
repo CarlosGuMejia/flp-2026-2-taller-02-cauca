@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Juan Eduardo Calderon Jaramillo 2611001
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Batería de pruebas con rackunit. Llega escrita en el fork y no se
@@ -203,13 +203,170 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
               (check-exn exn:fail?
                          (lambda () (corre "case true of 1 => 1 otherwise => 0 end"))))))
 
+;; ==========================================================
+;; Pruebas del grupo — scanner, parser y fachada/REPL (Eduardo)
+;; ==========================================================
+
+;; ast : string -> lista
+;; Parsea el texto y devuelve el AST como lista comparable con equal?.
+(define ast (lambda (texto) (ast->lista (parser texto))))
+
+;; tokens-de : string -> int
+;; Cantidad de tokens de un texto, sin contar el marcador de fin de
+;; entrada que SLLGEN agrega: se resta lo que produce el texto vacio.
+(define tokens-de
+  (lambda (texto) (- (length (scanner texto)) (length (scanner "")))))
+
+(define scanner-pruebas
+  (test-suite
+   "Scanner"
+   (test-case "numeros enteros y flotantes, positivos y negativos"
+              (check-equal? (tokens-de "42") 1)
+              (check-equal? (tokens-de "-7") 1)
+              (check-equal? (tokens-de "3.5") 1)
+              (check-equal? (tokens-de "-2.25") 1)
+              (check-equal? (tokens-de "-7  3.5  -2.25") 3))
+   (test-case "identificadores con guion bajo, digitos y signo de interrogacion"
+              (check-equal? (tokens-de "x") 1)
+              (check-equal? (tokens-de "x_1") 1)
+              (check-equal? (tokens-de "par?") 1)
+              (check-equal? (tokens-de "ifx") 1))
+   (test-case "el guion no pertenece a un identificador"
+              (check-equal? (tokens-de "aplicar-n") 3)
+              (check-equal? (tokens-de "a-1") 2))
+   (test-case "primitivas y operadores de varios caracteres"
+              (check-equal? (tokens-de ">=") 1)
+              (check-equal? (tokens-de "<=") 1)
+              (check-equal? (tokens-de "==") 1)
+              (check-equal? (tokens-de "=>") 1)
+              (check-equal? (tokens-de "add1(n)") 4))
+   (test-case "los comentarios y los espacios se descartan"
+              (check-equal? (tokens-de "// solo comentario") 0)
+              (check-equal? (tokens-de "// comentario\n42") 1)
+              (check-equal? (tokens-de "   \n\t  7  ") 1))
+   (test-case "una frase completa"
+              (check-equal? (tokens-de "let x = 1 in x end") 7)
+              (check-equal? (tokens-de "if >=(a, b) then 1 else 2 end") 12))))
+
+(define parser-pruebas
+  (test-suite
+   "Parser"
+   (test-case "literales, variables y booleanos"
+              (check-equal? (ast "42") '(a-program (lit-exp 42)))
+              (check-equal? (ast "-7") '(a-program (lit-exp -7)))
+              (check-equal? (ast "3.5") '(a-program (lit-exp 3.5)))
+              (check-equal? (ast "x") '(a-program (var-exp x)))
+              (check-equal? (ast "true") '(a-program (true-exp)))
+              (check-equal? (ast "false") '(a-program (false-exp))))
+   (test-case "primitivas"
+              (check-equal? (ast "+(1, x)")
+                            '(a-program (prim-exp sum-prim ((lit-exp 1) (var-exp x)))))
+              (check-equal? (ast "add1(n)")
+                            '(a-program (prim-exp add-prim ((var-exp n)))))
+              (check-equal? (ast "-(10, 3, 2)")
+                            '(a-program (prim-exp minus-prim
+                                                  ((lit-exp 10) (lit-exp 3) (lit-exp 2)))))
+              (check-equal? (ast "promedio(1, 2)")
+                            '(a-program (prim-exp promedio-prim ((lit-exp 1) (lit-exp 2)))))
+              (check-equal? (ast "entre(x, 1, 9)")
+                            '(a-program (prim-exp entre-prim
+                                                  ((var-exp x) (lit-exp 1) (lit-exp 9))))))
+   (test-case "condicional"
+              (check-equal? (ast "if true then 1 else 2 end")
+                            '(a-program (if-exp (true-exp) (lit-exp 1) (lit-exp 2)))))
+   (test-case "let con varias ligaduras y let anidado"
+              (check-equal? (ast "let x = 1 y = 2 in x end")
+                            '(a-program (let-exp (x y) ((lit-exp 1) (lit-exp 2)) (var-exp x))))
+              (check-equal? (ast "let x = 1 in let y = 2 in y end end")
+                            '(a-program (let-exp (x) ((lit-exp 1))
+                                                 (let-exp (y) ((lit-exp 2)) (var-exp y))))))
+   (test-case "proc y apply, con cero y varios argumentos"
+              (check-equal? (ast "proc (a, b) a end")
+                            '(a-program (proc-exp (a b) (var-exp a))))
+              (check-equal? (ast "proc () 7 end")
+                            '(a-program (proc-exp () (lit-exp 7))))
+              (check-equal? (ast "apply f (1, 2)")
+                            '(a-program (app-exp (var-exp f) ((lit-exp 1) (lit-exp 2)))))
+              (check-equal? (ast "apply f ()")
+                            '(a-program (app-exp (var-exp f) ()))))
+   (test-case "letrec con uno y con dos procedimientos"
+              (check-equal? (ast "letrec f (x) = x in apply f (1) end")
+                            '(a-program (letrec-exp (f) ((x)) ((var-exp x))
+                                                    (app-exp (var-exp f) ((lit-exp 1))))))
+              (check-equal? (ast "letrec f (x) = x g () = 1 in 0 end")
+                            '(a-program (letrec-exp (f g) ((x) ()) ((var-exp x) (lit-exp 1))
+                                                    (lit-exp 0)))))
+   (test-case "case con varias ramas"
+              (check-equal? (ast "case n of 1 => 10 of 2 => 20 otherwise => 0 end")
+                            '(a-program (case-exp (var-exp n) (1 2)
+                                                  ((lit-exp 10) (lit-exp 20)) (lit-exp 0)))))
+   (test-case "el comentario no cambia el arbol"
+              (check-equal? (ast "// hola\n42") (ast "42")))
+   (test-case "el programa de la Parte 5 se analiza sin error"
+              (check-true (programa? (parser "let umbral = promedio(n, m, p)
+in
+  letrec
+    contar (k) = if <=(k, umbral)
+                 then apply contar (add1(k))
+                 else k
+                 end
+  in
+    case apply contar (1)
+      of 7 => abs(-(umbral, 7))
+      otherwise => mcd(n, m)
+    end
+  end
+end"))))
+   (test-case "las 21 primitivas se reconocen"
+              (for-each
+               (lambda (texto) (check-true (programa? (parser texto))))
+               '("+(1, 2)" "-(1, 2)" "*(1, 2)" "/(1, 2)" "add1(1)" "sub1(1)"
+                 ">(1, 2)" ">=(1, 2)" "<(1, 2)" "<=(1, 2)" "==(1, 2)"
+                 "not(true)" "and(true, false)" "or(true, false)"
+                 "abs(1)" "mcd(1, 2)" "mcm(1, 2)" "promedio(1)"
+                 "xor(true, false)" "implica(true, false)" "entre(1, 0, 2)")))
+   (test-case "texto fuera de la gramatica es un error"
+              (check-exn exn:fail? (lambda () (parser "if true then 1 end")))
+              (check-exn exn:fail? (lambda () (parser "+(1, 2")))
+              (check-exn exn:fail? (lambda () (parser "let x 1 in x end")))
+              (check-exn exn:fail? (lambda () (parser "(1)")))
+              (check-exn exn:fail? (lambda () (parser "apply f 1"))))))
+
+(define fachada-y-repl
+  (test-suite
+   "Fachada e interfaz"
+   (test-case "la fachada reexporta las funciones de cada modulo"
+              (check-true (procedure? scanner))
+              (check-true (procedure? parser))
+              (check-true (procedure? interpretar))
+              (check-true (procedure? interpretador))
+              (check-true (procedure? evaluar-programa))
+              (check-true (procedure? evaluar-expresion))
+              (check-true (procedure? evaluar-primitiva))
+              (check-true (procedure? apply-env))
+              (check-true (procedure? apply-procedure))
+              (check-true (procedure? ambiente-inicial)))
+   (test-case "la fachada reexporta los predicados de los datatypes"
+              (check-true (procedure? programa?))
+              (check-true (procedure? expresion?))
+              (check-true (procedure? primitiva?))
+              (check-true (procedure? procval?))
+              (check-true (procedure? ambiente?)))
+   (test-case "parser produce un programa y interpretar compone parser y evaluar"
+              (check-true (programa? (parser "42")))
+              (check-equal? (interpretar "42") (evaluar-programa (parser "42")))
+              (check-equal? (interpretar "+(n, m)") 13))))
+
 ;; Las suites que agregue el grupo se declaran arriba y se suman aquí.
 
 (define fallidas
   (+ (run-tests base)
      (run-tests primitivas-nuevas)
      (run-tests procedimientos)
-     (run-tests recursion-y-case)))
+     (run-tests recursion-y-case)
+     (run-tests scanner-pruebas)
+     (run-tests parser-pruebas)
+     (run-tests fachada-y-repl)))
 
 (eopl:printf "~%==========================================~%")
 (eopl:printf "  pruebas fallidas en total: ~s~%" fallidas)
