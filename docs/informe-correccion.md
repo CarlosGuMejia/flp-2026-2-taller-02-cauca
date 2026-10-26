@@ -8,7 +8,7 @@ de Programación — Universidad del Valle, Sede Tuluá.
 
 | Nombre | Código | Correo institucional |
 |--------|--------|----------------------|
-| Jesus David Lopez Diaz | 202611029-3743  | jesus.david.lopez@correounivalle.edu.co |
+| Jesus David Lopez Diaz | 2611029-3743  | jesus.david.lopez@correounivalle.edu.co |
 | Carlos Humberto Gutierrez Mejia | 2059817-3743 | carlos.humberto.gutierrez@correounivalle.edu.co |
 
 ---
