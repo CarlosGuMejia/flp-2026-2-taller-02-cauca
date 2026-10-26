@@ -20,7 +20,7 @@ parte del grupo.
 | Nombre completo | Código       | Correo institucional                        |
 |---|--------------|---------------------------------------------|
 |Juan Eduardo Calderon Jaramillo | 2611001-3743 | juan.eduardo.calderon@correounivalle.edu.co |
-| |              |                                             |
+|Jesus David Lopez Diaz          | 2611029-3743 | jesus.david.lopez@correounivalle.edu.co                                                 |
 | |              |                                             |
 |Carlos Humberto Gutierrez Mejia | 2059817-3743 | carlos.humberto.gutierrez@correounivalle.edu.co |                                           |
 

@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Juan Eduardo Calderon Jaramillo 2611001, Carlos Humberto Gutierrez Mejia 2059817
+;Autores: Juan Eduardo Calderon Jaramillo 2611001,Jesus David Lopez Diaz 2611029, Carlos Humberto Gutierrez Mejia 2059817
 
 
 ;; Taller 2 — El intérprete de Cauca.
@@ -455,6 +455,82 @@ end"))))
               (check-equal? (corre "letrec f (a) = +(a, n) in apply f (1) end") 11))))
 
 
+;; ==========================================================
+;; Pruebas del grupo — procedimientos, letrec y case (David)
+;; ==========================================================
+
+(define suite-david
+  (test-suite
+   "David: procedimientos, letrec y case"
+
+   (test-case "procedimientos de cero, uno y varios parametros"
+     (check-equal? (corre "let f = proc () 42 end in apply f () end") 42)
+     (check-equal? (corre "let doble = proc (x) *(x, 2) end in apply doble (21) end") 42)
+     (check-equal? (corre "let suma3 = proc (a, b, c) +(a, +(b, c)) end in apply suma3 (1, 2, 3) end") 6))
+
+   (test-case "procedimiento como argumento y como resultado"
+     (check-equal?
+      (corre "let aplicar = proc (f, x) apply f (x) end in apply aplicar (proc (y) add1(y) end, 41) end")
+      42)
+     (check-equal?
+      (corre "let crear = proc (k) proc (x) +(x, k) end end in let suma5 = apply crear (5) in apply suma5 (10) end end")
+      15))
+
+   (test-case "clausura: el cuerpo usa el ambiente de la definicion (50, no 5000)"
+     (check-equal?
+      (corre "let factor = 10 in let escalar = proc (v) *(v, factor) end in let factor = 1000 in apply escalar (5) end end end")
+      50))
+
+   (test-case "proc no evalua el cuerpo al construir la clausura"
+     (check-equal? (corre "let f = proc (x) apply no_existe (x) end in 7 end") 7))
+
+   (test-case "errores de procedimientos"
+     (check-exn exn:fail? (lambda () (corre "apply 5 (1)")))
+     (check-exn exn:fail? (lambda () (corre "let f = proc (x) x end in apply f (1, 2) end")))
+     (check-exn exn:fail? (lambda () (corre "let f = proc (x, y) x end in apply f (1) end"))))
+
+   (test-case "if exige condicion booleana"
+     (check-exn exn:fail? (lambda () (corre "if 1 then 2 else 3 end"))))
+
+   (test-case "letrec: recursion simple y con dos parametros"
+     (check-equal?
+      (corre "letrec fact (n) = if ==(n, 0) then 1 else *(n, apply fact (sub1(n))) end in apply fact (5) end")
+      120)
+     (check-equal?
+      (corre "letrec potencia (base, exp) = if ==(exp, 0) then 1 else *(base, apply potencia (base, sub1(exp))) end in apply potencia (2, 10) end")
+      1024))
+
+   (test-case "letrec: recursion mutua y procedimiento como argumento"
+     (check-equal?
+      (corre "letrec par (n) = if ==(n, 0) then true else apply impar (sub1(n)) end impar (n) = if ==(n, 0) then false else apply par (sub1(n)) end in apply par (10) end")
+      #t)
+     (check-equal?
+      (corre "letrec veces (f, x, k) = if ==(k, 0) then x else apply veces (f, apply f (x), sub1(k)) end in apply veces (proc (y) *(y, 2) end, 1, 5) end")
+      32))
+
+   (test-case "let no basta para la recursion"
+     (check-exn
+      exn:fail?
+      (lambda ()
+        (corre "let potencia = proc (base, exp) if ==(exp, 0) then 1 else *(base, apply potencia (base, sub1(exp))) end end in apply potencia (2, 10) end"))))
+
+   (test-case "case: coincidencia, otherwise y primera coincidencia"
+     (check-equal? (corre "let dia = 3 in case dia of 1 => 100 of 3 => 300 of 7 => 700 otherwise => 0 end end") 300)
+     (check-equal? (corre "case 9 of 1 => 100 of 2 => 200 otherwise => 0 end") 0)
+     (check-equal? (corre "case +(n, 1) of 10 => 1 of 11 => 2 otherwise => 3 end") 2)
+     (check-equal? (corre "case 2 of 2 => 20 of 2 => 99 otherwise => 0 end") 20))
+
+   (test-case "case: control no numerico"
+     (check-exn exn:fail? (lambda () (corre "case true of 1 => 1 otherwise => 0 end"))))
+
+   (test-case "programas de la Parte 5 (traza y arbol)"
+     (check-equal?
+      (corre "let desplazar = proc (x, d) +(x, d) end in letrec acumular (i, total) = if >(i, m) then total else apply acumular (add1(i), apply desplazar (total, i)) end in apply acumular (1, q) end end")
+      8)
+     (check-equal?
+      (corre "let umbral = promedio(n, m, p) in letrec contar (k) = if <=(k, umbral) then apply contar (add1(k)) else k end in case apply contar (1) of 7 => abs(-(umbral, 7)) otherwise => mcd(n, m) end end end")
+      1/3))))
+
 (define fallidas
   (+ (run-tests base)
      (run-tests primitivas-nuevas)
@@ -465,7 +541,8 @@ end"))))
      (run-tests fachada-y-repl)
      (run-tests carlos-primitivas-base)
      (run-tests carlos-primitivas-nuevas)
-     (run-tests carlos-ambientes)))
+     (run-tests carlos-ambientes)
+     (run-tests suite-david)))
 
 (eopl:printf "~%==========================================~%")
 (eopl:printf "  pruebas fallidas en total: ~s~%" fallidas)
