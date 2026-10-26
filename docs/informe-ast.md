@@ -7,7 +7,9 @@ de Programación — Universidad del Valle, Sede Tuluá.
 
 | Nombre | Código | Correo institucional |
 |--------|--------|----------------------|
-|Juan Eduardo Calderon Jaramillo | 2611001-3743 | juan.eduardo.calderon@correounivalle.edu.co |
+| Juan Eduardo Calderon Jaramillo | 2611001-3743 | juan.eduardo.calderon@correounivalle.edu.co |
+| Jesus David Lopez Diaz | 2611029-3743 | jesus.david.lopez@correounivalle.edu.co |
+| Carlos Humberto Gutierrez Mejia | 2059817-3743 | carlos.humberto.gutierrez@correounivalle.edu.co |
 
 ---
 
@@ -70,17 +72,17 @@ ramas de `case-exp` se declaran con `arbno` (cero o más ramas).
 ```scheme
 let umbral = promedio(n, m, p)
 in
-  letrec
-    contar (k) = if <=(k, umbral)
-                 then apply contar (add1(k))
-                 else k
-                 end
-  in
-    case apply contar (1)
-      of 7 => abs(-(umbral, 7))
-      otherwise => mcd(n, m)
-    end
-  end
+letrec
+contar (k) = if <=(k, umbral)
+then apply contar (add1(k))
+else k
+end
+in
+case apply contar (1)
+of 7 => abs(-(umbral, 7))
+otherwise => mcd(n, m)
+end
+end
 end
 ```
 
@@ -89,36 +91,36 @@ es el campo del constructor al que pertenece el hijo.
 
 ```mermaid
 graph TD
-  P["a-program"] -->|exp| L["let-exp<br/>ids: umbral"]
+    P["a-program"] -->|exp| L["let-exp<br/>ids: umbral"]
 
-  L -->|"rands[0]"| PR["prim-exp<br/>promedio-prim"]
-  PR -->|"rands[0]"| PRn["var-exp n"]
-  PR -->|"rands[1]"| PRm["var-exp m"]
-  PR -->|"rands[2]"| PRp["var-exp p"]
+    L -->|"rands[0]"| PR["prim-exp<br/>promedio-prim"]
+    PR -->|"rands[0]"| PRn["var-exp n"]
+    PR -->|"rands[1]"| PRm["var-exp m"]
+    PR -->|"rands[2]"| PRp["var-exp p"]
 
-  L -->|body| LR["letrec-exp<br/>proc-names: contar<br/>idss: (k)"]
+    L -->|body| LR["letrec-exp<br/>proc-names: contar<br/>idss: (k)"]
 
-  LR -->|"bodies[0]"| IF["if-exp"]
-  IF -->|test| T["prim-exp<br/>menorigual-prim"]
-  T -->|"rands[0]"| Tk["var-exp k"]
-  T -->|"rands[1]"| Tu["var-exp umbral"]
-  IF -->|true-exp| A1["app-exp"]
-  A1 -->|rator| A1r["var-exp contar"]
-  A1 -->|"rands[0]"| A1a["prim-exp<br/>add-prim"]
-  A1a -->|"rands[0]"| A1k["var-exp k"]
-  IF -->|false-exp| F["var-exp k"]
+    LR -->|"bodies[0]"| IF["if-exp"]
+    IF -->|test| T["prim-exp<br/>menorigual-prim"]
+    T -->|"rands[0]"| Tk["var-exp k"]
+    T -->|"rands[1]"| Tu["var-exp umbral"]
+    IF -->|true-exp| A1["app-exp"]
+    A1 -->|rator| A1r["var-exp contar"]
+    A1 -->|"rands[0]"| A1a["prim-exp<br/>add-prim"]
+    A1a -->|"rands[0]"| A1k["var-exp k"]
+    IF -->|false-exp| F["var-exp k"]
 
-  LR -->|body| C["case-exp<br/>valores: (7)"]
-  C -->|exp| CA["app-exp"]
-  CA -->|rator| CAr["var-exp contar"]
-  CA -->|"rands[0]"| CAl["lit-exp 1"]
-  C -->|"acciones[0]"| AB["prim-exp<br/>abs-prim"]
-  AB -->|"rands[0]"| MN["prim-exp<br/>minus-prim"]
-  MN -->|"rands[0]"| MNu["var-exp umbral"]
-  MN -->|"rands[1]"| MN7["lit-exp 7"]
-  C -->|default| MC["prim-exp<br/>mcd-prim"]
-  MC -->|"rands[0]"| MCn["var-exp n"]
-  MC -->|"rands[1]"| MCm["var-exp m"]
+    LR -->|body| C["case-exp<br/>valores: (7)"]
+    C -->|exp| CA["app-exp"]
+    CA -->|rator| CAr["var-exp contar"]
+    CA -->|"rands[0]"| CAl["lit-exp 1"]
+    C -->|"acciones[0]"| AB["prim-exp<br/>abs-prim"]
+    AB -->|"rands[0]"| MN["prim-exp<br/>minus-prim"]
+    MN -->|"rands[0]"| MNu["var-exp umbral"]
+    MN -->|"rands[1]"| MN7["lit-exp 7"]
+    C -->|default| MC["prim-exp<br/>mcd-prim"]
+    MC -->|"rands[0]"| MCn["var-exp n"]
+    MC -->|"rands[1]"| MCm["var-exp m"]
 ```
 
 **Explicación:** la raíz es `a-program` con una sola expresión. El `let-exp`
@@ -141,19 +143,19 @@ comparar con la salida del parser:
 
 ```scheme
 (a-program
- (let-exp (umbral)
-          ((prim-exp promedio-prim ((var-exp n) (var-exp m) (var-exp p))))
-          (letrec-exp (contar) ((k))
-                      ((if-exp (prim-exp menorigual-prim ((var-exp k) (var-exp umbral)))
-                               (app-exp (var-exp contar)
-                                        ((prim-exp add-prim ((var-exp k)))))
-                               (var-exp k)))
-                      (case-exp (app-exp (var-exp contar) ((lit-exp 1)))
-                                (7)
-                                ((prim-exp abs-prim
-                                           ((prim-exp minus-prim
-                                                      ((var-exp umbral) (lit-exp 7))))))
-                                (prim-exp mcd-prim ((var-exp n) (var-exp m)))))))
+  (let-exp (umbral)
+    ((prim-exp promedio-prim ((var-exp n) (var-exp m) (var-exp p))))
+    (letrec-exp (contar) ((k))
+      ((if-exp (prim-exp menorigual-prim ((var-exp k) (var-exp umbral)))
+         (app-exp (var-exp contar)
+           ((prim-exp add-prim ((var-exp k)))))
+         (var-exp k)))
+      (case-exp (app-exp (var-exp contar) ((lit-exp 1)))
+        (7)
+        ((prim-exp abs-prim
+           ((prim-exp minus-prim
+              ((var-exp umbral) (lit-exp 7))))))
+        (prim-exp mcd-prim ((var-exp n) (var-exp m)))))))
 ```
 
 ---
@@ -172,17 +174,17 @@ end
 
 ```mermaid
 graph TD
-  P["a-program"] --> L["let-exp<br/>ids: x"]
-  L -->|"rands[0]"| R["lit-exp 2"]
-  L -->|body| IF["if-exp"]
-  IF -->|test| T["prim-exp<br/>mayor-prim"]
-  T --> Tx["var-exp x"]
-  T --> T0["lit-exp 0"]
-  IF -->|true-exp| M["prim-exp<br/>mult-prim"]
-  M --> Mx["var-exp x"]
-  M --> Ma["prim-exp<br/>add-prim"]
-  Ma --> Max["var-exp x"]
-  IF -->|false-exp| F["lit-exp 0"]
+    P["a-program"] --> L["let-exp<br/>ids: x"]
+    L -->|"rands[0]"| R["lit-exp 2"]
+    L -->|body| IF["if-exp"]
+    IF -->|test| T["prim-exp<br/>mayor-prim"]
+    T --> Tx["var-exp x"]
+    T --> T0["lit-exp 0"]
+    IF -->|true-exp| M["prim-exp<br/>mult-prim"]
+    M --> Mx["var-exp x"]
+    M --> Ma["prim-exp<br/>add-prim"]
+    Ma --> Max["var-exp x"]
+    IF -->|false-exp| F["lit-exp 0"]
 ```
 
 **Explicación:** el `let-exp` guarda los identificadores y las expresiones en
@@ -205,15 +207,15 @@ in apply suma (3, 4) end
 
 ```mermaid
 graph TD
-  P["a-program"] --> L["let-exp<br/>ids: suma"]
-  L -->|"rands[0]"| PR["proc-exp<br/>ids: (a b)"]
-  PR -->|body| S["prim-exp<br/>sum-prim"]
-  S --> Sa["var-exp a"]
-  S --> Sb["var-exp b"]
-  L -->|body| A["app-exp"]
-  A -->|rator| Ar["var-exp suma"]
-  A -->|"rands[0]"| A3["lit-exp 3"]
-  A -->|"rands[1]"| A4["lit-exp 4"]
+    P["a-program"] --> L["let-exp<br/>ids: suma"]
+    L -->|"rands[0]"| PR["proc-exp<br/>ids: (a b)"]
+    PR -->|body| S["prim-exp<br/>sum-prim"]
+    S --> Sa["var-exp a"]
+    S --> Sb["var-exp b"]
+    L -->|body| A["app-exp"]
+    A -->|rator| Ar["var-exp suma"]
+    A -->|"rands[0]"| A3["lit-exp 3"]
+    A -->|"rands[1]"| A4["lit-exp 4"]
 ```
 
 **Explicación:** `proc-exp` guarda solo los parámetros y el cuerpo sin evaluar;
@@ -230,15 +232,15 @@ exige la palabra `apply`.
 ```scheme
 let desplazar = proc (x, d) +(x, d) end
 in
-  letrec
-    acumular (i, total) = if >(i, m)
-                          then total
-                          else apply acumular
-                                 (add1(i), apply desplazar (total, i))
-                          end
-  in
-    apply acumular (1, q)
-  end
+letrec
+acumular (i, total) = if >(i, m)
+then total
+else apply acumular
+(add1(i), apply desplazar (total, i))
+end
+in
+apply acumular (1, q)
+end
 end
 ```
 
@@ -296,13 +298,13 @@ a $\rho$ con las ligaduras dadas (`ambiente-extendido`). Abreviaturas:
 
 9. **Rama `else`, en $\rho_3$.**
    $\text{value-of}(\texttt{apply acumular (add1(i), apply desplazar (total, i))},\ \rho_3)$.
-  - Operador: `acumular` $\to \sigma_2$ (de nuevo desde $\rho_2$).
-  - Primer operando: $\text{value-of}(\texttt{add1(i)}, \rho_3) = 2$.
-  - Segundo operando: $\text{value-of}(\texttt{apply desplazar (total, i)}, \rho_3)$.
-    Operador `desplazar` $\to \sigma_1$ (se encuentra en $\rho_1$); argumentos
-    $total = 2,\ i = 1$; `apply-procedure` evalúa $B_d$ en
-    $\rho_4 = \rho_0 \oplus [\,x = 2,\ d = 1\,]$.
-    $\text{value-of}(\texttt{+(x, d)},\ \rho_4) = 3$.
+- Operador: `acumular` $\to \sigma_2$ (de nuevo desde $\rho_2$).
+- Primer operando: $\text{value-of}(\texttt{add1(i)}, \rho_3) = 2$.
+- Segundo operando: $\text{value-of}(\texttt{apply desplazar (total, i)}, \rho_3)$.
+  Operador `desplazar` $\to \sigma_1$ (se encuentra en $\rho_1$); argumentos
+  $total = 2,\ i = 1$; `apply-procedure` evalúa $B_d$ en
+  $\rho_4 = \rho_0 \oplus [\,x = 2,\ d = 1\,]$.
+  $\text{value-of}(\texttt{+(x, d)},\ \rho_4) = 3$.
 
 10. **Llamada 2** (primera llamada recursiva):
     $\text{apply-procedure}(\sigma_2, (2\ 3))$ evalúa $B_a$ en
@@ -346,24 +348,24 @@ ambiente extendido. Las punteadas muestran qué ambiente captura cada clausura.
 
 ```mermaid
 graph LR
-  E8["ρ8 · ambiente-extendido<br/>x = 5, d = 3<br/>(llamada a desplazar)"] -->|extiende| E0
-  E7["ρ7 · ambiente-extendido<br/>i = 3, total = 5"] -->|extiende| E2["ρ2 · ambiente-recursivo<br/>acumular (i, total) = Ba"]
-  E2 -->|extiende| E1["ρ1 · ambiente-extendido<br/>desplazar = σ1"]
-  E1 -->|extiende| E0["ρ0 · ambiente-extendido<br/>n=10, m=3, p=7, q=2, r=5"]
-  E0 -->|extiende| V["ambiente-vacio"]
+    E8["ρ8 · ambiente-extendido<br/>x = 5, d = 3<br/>(llamada a desplazar)"] -->|extiende| E0
+    E7["ρ7 · ambiente-extendido<br/>i = 3, total = 5"] -->|extiende| E2["ρ2 · ambiente-recursivo<br/>acumular (i, total) = Ba"]
+    E2 -->|extiende| E1["ρ1 · ambiente-extendido<br/>desplazar = σ1"]
+    E1 -->|extiende| E0["ρ0 · ambiente-extendido<br/>n=10, m=3, p=7, q=2, r=5"]
+    E0 -->|extiende| V["ambiente-vacio"]
 
-  S1["σ1 · cerradura<br/>ids: (x d)<br/>body: +(x, d)"]
-  E1 -.->|"valor de desplazar"| S1
-  S1 -.->|"env capturado"| E0
+    S1["σ1 · cerradura<br/>ids: (x d)<br/>body: +(x, d)"]
+    E1 -.->|"valor de desplazar"| S1
+    S1 -.->|"env capturado"| E0
 
-  S2["σ2 · cerradura de acumular<br/>(la arma apply-env)"]
-  E2 -.->|"apply-env construye"| S2
-  S2 -.->|"env = el propio ρ2"| E2
+    S2["σ2 · cerradura de acumular<br/>(la arma apply-env)"]
+    E2 -.->|"apply-env construye"| S2
+    S2 -.->|"env = el propio ρ2"| E2
 
-  classDef vacio fill:#eee,stroke:#888,color:#555;
-  classDef clausura fill:#fff3cd,stroke:#b8860b;
-  class V vacio;
-  class S1,S2 clausura;
+    classDef vacio fill:#eee,stroke:#888,color:#555;
+    classDef clausura fill:#fff3cd,stroke:#b8860b;
+    class V vacio;
+    class S1,S2 clausura;
 ```
 
 **Lectura del diagrama.**

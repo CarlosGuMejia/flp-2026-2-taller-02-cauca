@@ -52,8 +52,8 @@
   (scanner "aplicar-n")
     => 3 tokens: identificador aplicar, "-", identificador n
        (un identificador no puede llevar guion)
-  Nota: scanner agrega ademas el marcador de fin de entrada propio de
-  SLLGEN. Pegue aqui la salida exacta de su version de Racket.
+  Los conteos de tokens no incluyen el marcador de fin de entrada, si
+  SLLGEN lo agrega.
 
   ---------------- Parser (5) ----------------
   (ast->lista (parser "42"))
@@ -76,14 +76,43 @@
     => (a-program (letrec-exp (f) ((x)) ((var-exp x))
                               (app-exp (var-exp f) ((lit-exp 1)))))
 
-  ---------------- Ejecucion del lenguaje base ----------------
+  ---------------- Ejecucion del lenguaje base (18) ----------------
+  Literales, variables y booleanos
   (interpretar "42")                                   => 42
+  (interpretar "-7")                                   => -7
+  (interpretar "3.5")                                  => 3.5
   (interpretar "n")                                    => 10
+  (interpretar "true")                                 => #t
+  (interpretar "false")                                => #f
+  Primitivas aritmeticas n-arias
   (interpretar "+(1, 2, 3)")                           => 6
+  (interpretar "-(10, 3, 2)")                          => 5
+  (interpretar "*(2, 3, 4)")                           => 24
+  (interpretar "/(100, 5, 2)")                         => 10
+  Primitivas unarias
+  (interpretar "add1(n)")                              => 11
+  (interpretar "sub1(n)")                              => 9
+  (interpretar "not(true)")                            => #f
+  Primitivas relacionales
+  (interpretar ">(n, m)")                              => #t
+  (interpretar ">=(m, m)")                             => #t
+  (interpretar "<(q, r)")                              => #t
+  (interpretar "<=(r, q)")                             => #f
+  (interpretar "==(n, 10)")                            => #t
+  Primitivas logicas
+  (interpretar "and(true, false)")                     => #f
+  (interpretar "or(true, false)")                      => #t
+  Condicional y ligaduras locales
   (interpretar "if >(n, m) then n else m end")         => 10
   (interpretar "let x = 2 y = 3 in *(x, y) end")       => 6
-  (interpretar "if n then 1 else 2 end")               => error: condicion no booleana
+  (interpretar "let x = 1 in let x = 2 in x end end")  => 2   (shadowing)
+  (interpretar "let x = 1 in +(x, n) end")             => 11  (ambiente inicial)
+  El ejemplo del area del rectangulo (enunciado)       => 40
+  Casos de error
+  (interpretar "if n then 1 else 2 end")               => error: la condicion debe ser booleana
   (interpretar "z")                                    => error: variable no ligada
+  (interpretar "+(1, true)")                           => error: se esperaba un numero
+  (interpretar "/(1, 0)")                              => error: division por cero
 
   ---------------- Primitivas nuevas ----------------
   (interpretar "abs(-7)")                  => 7
