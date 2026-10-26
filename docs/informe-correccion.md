@@ -64,7 +64,6 @@ La corrección se argumenta demostrando:
 
 
 ### 2.1 Corrección de `apply-procedure` (enunciado, 6.1)
-
 Notación. $\rho$ es un ambiente; $\rho[\bar{x} = \bar{v}]$ es $\rho$ extendido con las ligaduras $x_1 = v_1, \dots, x_n = v_n$ (las nuevas tapan a las anteriores con el mismo nombre); $\text{value-of}(e, \rho)$ es el valor de la expresión $e$ en $\rho$. Una clausura se escribe $\langle \bar{x};\ b;\ \rho_d \rangle$: parámetros, cuerpo sin evaluar y ambiente de definición.
 
 Especificación.
@@ -176,7 +175,6 @@ Conclusión: apply-procedure es correcta respecto a su especificación: evalúa 
 ---
 
 ### 2.2 Corrección de `letrec-exp` (enunciado, 6.2)
-
 Especificación.
 
 Tipo: evaluar-expresion : expresion x ambiente -> valor, restringida a letrec-exp.
@@ -209,6 +207,7 @@ Consecuencia. Al aplicar esa clausura a $\bar{v}$, el cuerpo $b_i$ se evalúa en
 
 (b) apply-env sobre un ambiente-recursivo satisface el invariante.
 
+<!-- BORRADOR: Carlos debe revisarlo contra su apply-env de src/ambiente.rkt (en el plan, este punto es suyo). -->
 
 apply-env recibe el ambiente $\rho_r$ y el nombre buscado $x$. Si $x = p_i$, la rama de ambiente-recursivo devuelve (cerradura ids_i body_i env) con env igual al ambiente que recibió como argumento, es decir, $\rho_r$. Entonces $\texttt{apply-env}(\rho_r, p_i) = \langle \bar{x}_i;\ b_i;\ \rho_r \rangle$, que es (INV). Si $x$ no es ninguno de los $p_i$, la búsqueda continúa en $\rho$.
 

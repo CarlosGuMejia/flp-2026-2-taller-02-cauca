@@ -145,13 +145,73 @@
   (interpretar "entre(1, 2)")              => error: cantidad de argumentos
 
   ---------------- Procedimientos ----------------
-  (interpretar "let f = proc () 7 end in apply f () end")   => 7
-  (interpretar "apply 5 (1)")                          => error: no es procedimiento
-
-  ---------------- Recursion y case ----------------
+    Sin parametros:
+  (interpretar "let f = proc () 7 end in apply f () end")
+                                                       => 7
+  Un parametro:
+  (interpretar "let doble = proc (x) *(x, 2) end in apply doble (21) end")
+                                                       => 42
+  Varios parametros:
+  (interpretar "let suma3 = proc (a, b, c) +(a, +(b, c)) end
+                in apply suma3 (1, 2, 3) end")         => 6
+  Un procedimiento recibe otro como argumento:
+  (interpretar "let aplicar = proc (f, x) apply f (x) end
+                in apply aplicar (proc (y) add1(y) end, 41) end")
+                                                       => 42
+  Un procedimiento retorna otro (el intermedio se liga con let antes de aplicarlo):
+  (interpretar "let crear = proc (k) proc (x) +(x, k) end end
+                in let suma5 = apply crear (5)
+                   in apply suma5 (10) end
+                end")                                  => 15
+  Ejemplo de contraste, la clausura recuerda el ambiente de la definicion:
+  (interpretar "let factor = 10
+                in let escalar = proc (v) *(v, factor) end
+                   in let factor = 1000
+                      in apply escalar (5) end
+                   end
+                end")                                  => 50  (no 5000)
+  Error, el operador no es un procedimiento:
+  (interpretar "apply 5 (1)")                          => error: el operador no es un procedimiento
+  Error, la cantidad de argumentos no coincide:
+  (interpretar "let f = proc (x) x end in apply f (1, 2) end")
+                                                       => error: se esperaban 1 argumentos y se recibieron 2
+ 
+  ---------------- letrec (4 ejemplos) ----------------
+  Recursion simple:
+  (interpretar "letrec fact (n) = if ==(n, 0) then 1
+                                  else *(n, apply fact (sub1(n))) end
+                in apply fact (5) end")                => 120
+  Dos parametros:
   (interpretar "letrec potencia (base, exp) = if ==(exp, 0) then 1
-                else *(base, apply potencia (base, sub1(exp))) end
+                                              else *(base, apply potencia (base, sub1(exp))) end
                 in apply potencia (2, 10) end")        => 1024
-  (interpretar "case +(1, 2) of 2 => 20 of 3 => 30 otherwise => 0 end")
-                                                       => 30
+  Dos procedimientos mutuamente recursivos en el mismo letrec:
+  (interpretar "letrec par (n) = if ==(n, 0) then true else apply impar (sub1(n)) end
+                       impar (n) = if ==(n, 0) then false else apply par (sub1(n)) end
+                in apply par (10) end")                => #t
+  letrec con un procedimiento pasado como argumento:
+  (interpretar "letrec veces (f, x, k) = if ==(k, 0) then x
+                                         else apply veces (f, apply f (x), sub1(k)) end
+                in apply veces (proc (y) *(y, 2) end, 1, 5) end")
+                                                       => 32
+ 
+  ---------------- case (4 ejemplos) ----------------
+  El ejemplo del enunciado:
+  (interpretar "let dia = 3
+                in case dia
+                     of 1 => 100
+                     of 3 => 300
+                     of 7 => 700
+                     otherwise => 0
+                   end
+                end")                                  => 300
+  Rama otherwise activa:
+  (interpretar "case 9 of 1 => 100 of 2 => 200 otherwise => 0 end")
+                                                       => 0
+  La expresion de control se evalua una sola vez:
+  (interpretar "case +(n, 1) of 10 => 1 of 11 => 2 otherwise => 3 end")
+                                                       => 2
+  Error, el control no es numerico:
+  (interpretar "case true of 1 => 1 otherwise => 0 end")
+                                                       => error: el valor de control debe ser numerico
 |#
