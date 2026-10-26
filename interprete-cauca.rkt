@@ -86,9 +86,34 @@
   (interpretar "z")                                    => error: variable no ligada
 
   ---------------- Primitivas nuevas ----------------
-  (interpretar "abs(-7)")                              => 7
-  (interpretar "mcd(12, 18)")                          => 6
-  (interpretar "mcd(1.5, 2)")                          => error: argumento no entero
+  (interpretar "abs(-7)")                  => 7
+  (interpretar "abs(0)")                   => 0
+  (interpretar "abs(-2.5)")                => 2.5
+  (interpretar "abs(true)")                => error: se esperaba un numero
+  (interpretar "mcd(12, 18)")              => 6
+  (interpretar "mcd(7, 13)")               => 1
+  (interpretar "mcd(12, 18, 24)")          => 6
+  (interpretar "mcd(1.5, 2)")              => error: se esperaba un entero
+  (interpretar "mcm(4, 6)")                => 12
+  (interpretar "mcm(3, 5)")                => 15
+  (interpretar "mcm(2, 3, 4)")             => 12
+  (interpretar "mcm(1.5, 2)")              => error: se esperaba un entero
+  (interpretar "promedio(1, 2, 3, 4)")     => 5/2
+  (interpretar "promedio(10)")             => 10
+  (interpretar "promedio(n, m)")           => 13/2
+  (interpretar "promedio(true)")           => error: se esperaba un numero
+  (interpretar "xor(true, false)")         => #t
+  (interpretar "xor(true, true)")          => #f
+  (interpretar "xor(false, false)")        => #f
+  (interpretar "xor(1, true)")             => error: se esperaba un booleano
+  (interpretar "implica(true, false)")     => #f
+  (interpretar "implica(false, false)")    => #t
+  (interpretar "implica(true, true)")      => #t
+  (interpretar "implica(1, true)")         => error: se esperaba un booleano
+  (interpretar "entre(5, 1, 10)")          => #t
+  (interpretar "entre(1, 1, 10)")          => #t
+  (interpretar "entre(11, 1, 10)")         => #f
+  (interpretar "entre(1, 2)")              => error: cantidad de argumentos
 
   ---------------- Procedimientos ----------------
   (interpretar "let f = proc () 7 end in apply f () end")   => 7
