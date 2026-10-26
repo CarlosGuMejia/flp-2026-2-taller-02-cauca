@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Juan Eduardo Calderon Jaramillo 2611001
+;Autores: Juan Eduardo Calderon Jaramillo 2611001-3743
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El punto de entrada y el REPL. Requiere sintaxis.rkt e interprete.rkt.

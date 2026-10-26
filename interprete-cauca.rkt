@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Juan Eduardo Calderon Jaramillo 2611001
+;Autores: Juan Eduardo Calderon Jaramillo 2611001-3743,Jesus David Lopez Diaz 2611029-3743, Carlos Humberto Gutierrez Mejia 2059817-3743
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Fachada: reúne los seis módulos de src/ y reexporta todo lo que

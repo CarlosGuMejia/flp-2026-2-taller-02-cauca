@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Carlos Humberto Gutierrez Mejia 2059817
+;Autores: Carlos Humberto Gutierrez Mejia 2059817-3743
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Las primitivas del lenguaje y las verificaciones de tipo y de

@@ -1,11 +1,5 @@
-# Informe de corrección — {{Nombre del taller / entrega}}
+# Informe de corrección — Taller 2: El intérprete de Cauca.
 
-> **Plantilla de entrega.** Copie este archivo a
-> `docs/informe-correccion.md` dentro del repositorio del grupo y
-> reemplace los marcadores `{{...}}` con su contenido.
-> **No elimine las secciones obligatorias.** No se aceptan PDF, DOCX
-> ni imágenes insertadas: todo el documento debe ser Markdown, las
-> fórmulas en LaTeX (`$...$` / `$$...$$`) y los diagramas en Mermaid.
 
 **Curso:** Fundamentos de Interpretación y Compilación de Lenguajes
 de Programación — Universidad del Valle, Sede Tuluá.
@@ -14,8 +8,8 @@ de Programación — Universidad del Valle, Sede Tuluá.
 
 | Nombre | Código | Correo institucional |
 |--------|--------|----------------------|
-| Jesus David Lopez Diaz | 202611029  | jesus.david.lopez@correounivalle.edu.co |
-| Carlos Humberto Gutierrez Mejia | 2059817 | carlos.humberto.gutierrez@correounivalle.edu.co |
+| Jesus David Lopez Diaz | 202611029-3743  | jesus.david.lopez@correounivalle.edu.co |
+| Carlos Humberto Gutierrez Mejia | 2059817-3743 | carlos.humberto.gutierrez@correounivalle.edu.co |
 
 ---
 
@@ -478,6 +472,8 @@ $$
 **Terminación.** La medida $m=|N|\in\mathbb{N}$ decrece en 1 en cada llamada recursiva
 (`cdr` de las tres listas) y la recursión se detiene en $m=0$. $\blacksquare$
 
+## 3. Propiedades adicionales
+
 #### 3.1.3 Teorema: `apply-env` sobre `ambiente-recursivo` cumple el invariante
 
 **Teorema.** Para todo $\rho_{rec}=\texttt{ambiente-recursivo}(F,P,B,\rho)$ con nombres distintos,
@@ -549,5 +545,19 @@ ambiente inicial (`n = 10`), así que el resultado es $99$.
 ## 4. Referencias
 
 - Friedman, D. P., & Wand, M. *Essentials of Programming Languages*,
-  3.ª ed., MIT Press, 2008. Secciones {{…}}.
-- {{Otras referencias que hayan consultado.}}
+  3.ª ed., MIT Press, 2008. Sección 1.1 (especificación inductiva de
+  datos), sección 1.2 (definición de procedimientos recursivos sobre
+  datos inductivos, base de las demostraciones por inducción
+  estructural), sección 3.2 (el lenguaje LET, `value-of` y la
+  especificación de `if` y `let`), sección 3.3 (procedimientos y
+  clausuras, Figura 3.7) y sección 3.4 (procedimientos recursivos,
+  Figura 3.9, que sustenta `ambiente-recursivo`).
+- Friedman, D. P., & Wand, M. *Essentials of Programming Languages*,
+  3.ª ed., MIT Press, 2008. Sección 2.2 (representación de ambientes) y
+  Apéndice B, *SLLGEN: Parsing System*, para la gramática de Cauca y los
+  datatypes que genera.
+- *The Racket Reference*, secciones sobre números (`remainder`,
+  `quotient`, `integer?`, `exact?`), documentación de `eopl`.
+  <https://docs.racket-lang.org/reference/numbers.html>
+- *RackUnit: Unit Testing*, para la batería de pruebas del taller.
+  <https://docs.racket-lang.org/rackunit/>
